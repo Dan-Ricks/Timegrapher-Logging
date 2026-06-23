@@ -43,8 +43,11 @@ struct ContentView: View {
     @State private var useCustomBeat = false
 
     @State private var includeDiagonals = false
+    @State private var includeIsochronism = false
 
     @State private var timepiece = ""
+
+    @State private var isoReadings: [String: PositionData] = [:]
 
     @State private var readings: [String: PositionData] = [:]
 
@@ -129,6 +132,67 @@ struct ContentView: View {
         verticalPositions.contains { computedRates[$0] != nil }
     }
 
+    // Isochronism computed properties (24h later readings)
+    private var isoComputedRates: [String: Double] {
+        var dict: [String: Double] = [:]
+        for pos in positions {
+            if let data = isoReadings[pos], let r = Double(data.rate) {
+                dict[pos] = r
+            }
+        }
+        return dict
+    }
+
+    private var isoComputedAmplitudes: [String: Double] {
+        var dict: [String: Double] = [:]
+        for pos in positions {
+            if let data = isoReadings[pos], let a = Double(data.amplitude) {
+                dict[pos] = a
+            }
+        }
+        return dict
+    }
+
+    private var isoAverageRate: Double {
+        let vals = Array(isoComputedRates.values)
+        return vals.isEmpty ? 0 : vals.reduce(0, +) / Double(vals.count)
+    }
+
+    private var isoRateChanges: [String: Double] {
+        var dict: [String: Double] = [:]
+        for pos in positions {
+            if let primary = computedRates[pos], let iso = isoComputedRates[pos] {
+                dict[pos] = primary - iso
+            }
+        }
+        return dict
+    }
+
+    private var averageIsoRateChange: Double {
+        let vals = Array(isoRateChanges.values)
+        return vals.isEmpty ? 0 : vals.reduce(0, +) / Double(vals.count)
+    }
+
+    private var isoMaxDelta: Double {
+        let vals = Array(isoRateChanges.values)
+        guard let max = vals.max(), let min = vals.min() else { return 0 }
+        return max - min
+    }
+
+    private var averageAmplitudeDrop: Double {
+        var drops: [Double] = []
+        for pos in positions {
+            if let p = computedAmplitudes[pos], let i = isoComputedAmplitudes[pos] {
+                drops.append(p - i)
+            }
+        }
+        return drops.isEmpty ? 0 : drops.reduce(0, +) / Double(drops.count)
+    }
+
+    private var hasIsoRates: Bool {
+        !isoComputedRates.isEmpty
+    }
+
     private func binding(for position: String, keyPath: WritableKeyPath<PositionData, String>) -> Binding<String> {
         Binding(
             get: { readings[position]?[keyPath: keyPath] ?? "" },
@@ -140,10 +204,24 @@ struct ContentView: View {
         )
     }
 
+    private func isoBinding(for position: String, keyPath: WritableKeyPath<PositionData, String>) -> Binding<String> {
+        Binding(
+            get: { isoReadings[position]?[keyPath: keyPath] ?? "" },
+            set: { newVal in
+                var data = isoReadings[position] ?? PositionData()
+                data[keyPath: keyPath] = newVal
+                isoReadings[position] = data
+            }
+        )
+    }
+
     private func initializeReadings() {
         for pos in positions {
             if readings[pos] == nil {
                 readings[pos] = PositionData()
+            }
+            if isoReadings[pos] == nil {
+                isoReadings[pos] = PositionData()
             }
         }
     }
@@ -218,7 +296,7 @@ struct ContentView: View {
         lines.append("")
 
         // Position Readings - full table format (safe padding to avoid %s crashes on older devices)
-        lines.append("Position Readings")
+        lines.append(includeIsochronism ? "Position Readings (Full Wind / 0 Hours)" : "Position Readings")
         lines.append(String(repeating: "-", count: 55))
         lines.append(padLeft("Orientation", width: 18) + " " + padRight("Rate (s/d)", width: 12) + " " + padRight("Amplitude", width: 10) + " " + padRight("Beat Err", width: 10))
         lines.append(String(repeating: "-", count: 55))
@@ -237,6 +315,28 @@ struct ContentView: View {
         lines.append(padLeft("Largest Delta", width: 18) + " " + padRight(deltaRateStr, width: 12) + " " + padRight(deltaAmpStr, width: 10) + " " + padRight("", width: 10))
         lines.append("")
 
+        if includeIsochronism {
+            lines.append("Isochronism Readings (After 24 Hours)")
+            lines.append(String(repeating: "-", count: 62))
+            lines.append(padLeft("Orientation", width: 18) + " " + padRight("Rate (s/d)", width: 12) + " " + padRight("Δ", width: 8) + " " + padRight("Amplitude", width: 10) + " " + padRight("Beat Err", width: 10))
+            lines.append(String(repeating: "-", count: 62))
+
+            for pos in positions {
+                let data = isoReadings[pos] ?? PositionData()
+                let rateStr = data.rate.isEmpty ? "" : data.rate
+                let ampStr = data.amplitude.isEmpty ? "" : data.amplitude
+                let errStr = data.beatError.isEmpty ? "" : data.beatError
+                let deltaStr: String = {
+                    if let ir = computedRates[pos], let iir = isoComputedRates[pos] {
+                        return String(format: "%+.1f", ir - iir)
+                    }
+                    return ""
+                }()
+                lines.append(padLeft(pos, width: 18) + " " + padRight(rateStr, width: 12) + " " + padRight(deltaStr, width: 8) + " " + padRight(ampStr, width: 10) + " " + padRight(errStr, width: 10))
+            }
+            lines.append("")
+        }
+
         // Results
         lines.append("Results")
         lines.append("Average Rate: \(String(format: "%.2f", averageRate)) s/d")
@@ -244,6 +344,16 @@ struct ContentView: View {
         lines.append("Horizontal Avg: \(String(format: "%.2f", horizontalAvg)) s/d")
         lines.append("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d")
         lines.append("Horizontal vs Vertical Drop: \(String(format: "%.2f", verticalDrop)) s/d")
+
+        if includeIsochronism && hasIsoRates {
+            lines.append("24h Average Rate: \(String(format: "%.2f", isoAverageRate)) s/d")
+            lines.append("Avg Isochronism Rate Change: \(String(format: "%.2f", averageIsoRateChange)) s/d")
+            lines.append("Isochronism Max Delta: \(String(format: "%.2f", isoMaxDelta)) s/d")
+            if averageAmplitudeDrop != 0 {
+                lines.append("Avg Amplitude Drop: \(String(format: "%.0f", averageAmplitudeDrop))°")
+            }
+            lines.append("Isochronism guidelines: avg rate change <5 excellent, <15 acceptable; compare to measured values above")
+        }
 
         // Draw the image - use monospace for table alignment
         let font = UIFont.systemFont(ofSize: 13)
@@ -263,7 +373,7 @@ struct ContentView: View {
             var y = padding
             for (index, line) in lines.enumerated() {
                 let f: UIFont
-                if line.contains("Position Readings") || line.contains("Results") || line.hasPrefix("---") {
+                if line.contains("Position Readings") || line.contains("Isochronism Readings") || line.contains("Results") || line.hasPrefix("---") {
                     f = headerFont
                 } else if line.contains("Orientation") || line.contains("Largest Delta") || line.contains("Crown") || line.contains("Dial") {
                     f = monoFont
@@ -389,36 +499,36 @@ struct ContentView: View {
                 }
 
                 // Table for position readings (no spacing between rows, sized to fit, no cell borders)
-                Section("Position Readings") {
+                Section(includeIsochronism ? "Position Readings (Full Wind / 0 Hours)" : "Position Readings") {
                     VStack(spacing: 0) {
                         // Header row - tap header to dismiss keyboard
                         HStack(spacing: 0) {
                             Text("Orientation")
-                                .frame(width: 98, alignment: .leading)
+                                .frame(width: 90, alignment: .leading)
                                 .font(.system(size: 15, weight: .bold))
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.2))
 
                             Text("Rate (s/d)")
-                                .frame(width: 88, alignment: .trailing)
+                                .frame(width: 76, alignment: .trailing)
                                 .font(.system(size: 15, weight: .bold))
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.2))
 
                             Text("Amplitude")
-                                .frame(width: 88, alignment: .trailing)
+                                .frame(width: 76, alignment: .trailing)
                                 .font(.system(size: 15, weight: .bold))
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.2))
 
                             Text("Beat Err")
-                                .frame(width: 88, alignment: .trailing)
+                                .frame(width: 76, alignment: .trailing)
                                 .font(.system(size: 15, weight: .bold))
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.2))
                         }
                         .onTapGesture {
@@ -429,10 +539,10 @@ struct ContentView: View {
                         ForEach(positions, id: \.self) { position in
                             HStack(spacing: 0) {
                                 Text(position)
-                                    .frame(width: 98, alignment: .leading)
+                                    .frame(width: 90, alignment: .leading)
                                     .font(.system(size: 15))
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                                     .onTapGesture {
                                         hideKeyboard()
                                     }
@@ -441,35 +551,35 @@ struct ContentView: View {
                                     .keyboardType(.numbersAndPunctuation)
                                     .multilineTextAlignment(.trailing)
                                     .font(.system(size: 15))
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
 
                                 TextField("0", text: binding(for: position, keyPath: \.amplitude))
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
                                     .font(.system(size: 15))
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
 
                                 TextField("0.0", text: binding(for: position, keyPath: \.beatError))
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
                                     .font(.system(size: 15))
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                             }
                         }
 
                         // Hidden row at the bottom for largest delta (shown only when calculated)
                         HStack(spacing: 0) {
                             Text("Largest Delta")
-                                .frame(width: 98, alignment: .leading)
+                                .frame(width: 90, alignment: .leading)
                                 .font(.system(size: 15, weight: .bold))
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.05))
                                 .onTapGesture {
                                     hideKeyboard()
@@ -477,38 +587,38 @@ struct ContentView: View {
 
                             if !computedRates.isEmpty {
                                 Text("+" + String(format: "%.2f", maxDelta))
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
                                     .font(.system(size: 15))
                             } else {
                                 Text("")
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
                             }
 
                             if !computedAmplitudes.isEmpty {
                                 Text("+" + String(format: "%.0f", maxAmpDelta))
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
                                     .font(.system(size: 15))
                             } else {
                                 Text("")
-                                    .frame(width: 88, alignment: .trailing)
+                                    .frame(width: 76, alignment: .trailing)
                                     .padding(.vertical, 2)
-                                    .padding(.horizontal, 2)
+                                    .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
                             }
 
                             Text("")
-                                .frame(width: 88, alignment: .trailing)
+                                .frame(width: 76, alignment: .trailing)
                                 .padding(.vertical, 2)
-                                .padding(.horizontal, 2)
+                                .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.05))
                         }
                         .onTapGesture {
@@ -537,6 +647,154 @@ struct ContentView: View {
                         includeDiagonals.toggle()
                     }
                     .padding(.top, 8)
+
+                    HStack {
+                        Text("Include Isochronism measurements")
+                        Spacer()
+                        Image(systemName: includeIsochronism ? "checkmark.square.fill" : "square")
+                            .foregroundColor(.blue)
+                    }
+                    .font(.caption)
+                    .onTapGesture {
+                        hideKeyboard()
+                        includeIsochronism.toggle()
+                    }
+                    .padding(.top, 4)
+                }
+
+                if includeIsochronism {
+                    Section("Isochronism Readings (After 24 Hours)") {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Enter readings for the same positions ~24 hours later (mainspring unwound, lower amplitude). This measures isochronism (rate consistency as power reserve drops).")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 4)
+
+                            Text("Isochronism guidelines (avg rate change full wind vs 24h):")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("<5 s/d: excellent (modern/high-grade) • 5–10: good • 10–15: acceptable for most • >15: consider adjustment (regulator pins/hairspring)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .padding(.bottom, 4)
+
+                            VStack(spacing: 0) {
+                                // Header row
+                                HStack(spacing: 0) {
+                                    Text("Orientation")
+                                        .frame(width: 90, alignment: .leading)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, 1)
+                                        .background(Color.gray.opacity(0.2))
+
+                                    Text("Rate (s/d)")
+                                        .frame(width: 76, alignment: .trailing)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, 1)
+                                        .background(Color.gray.opacity(0.2))
+
+                                    Text("Δ")
+                                        .frame(width: 48, alignment: .trailing)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, 1)
+                                        .background(Color.gray.opacity(0.2))
+
+                                    Text("Amplitude")
+                                        .frame(width: 76, alignment: .trailing)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, 1)
+                                        .background(Color.gray.opacity(0.2))
+
+                                    Text("Beat Err")
+                                        .frame(width: 76, alignment: .trailing)
+                                        .font(.system(size: 15, weight: .bold))
+                                        .padding(.vertical, 2)
+                                        .padding(.horizontal, 1)
+                                        .background(Color.gray.opacity(0.2))
+                                }
+                                .onTapGesture {
+                                    hideKeyboard()
+                                }
+
+                                // Data rows for 24h
+                                ForEach(positions, id: \.self) { position in
+                                    let initRate = computedRates[position]
+                                    let isoRate = isoComputedRates[position]
+                                    let rateColor: Color = {
+                                        guard let ir = initRate, let irate = isoRate else { return .primary }
+                                        let d = abs(ir - irate)
+                                        if d >= 15 { return .red }
+                                        else if d >= 10 { return .orange }
+                                        else { return .primary }
+                                    }()
+
+                                    HStack(spacing: 0) {
+                                        Text(position)
+                                            .frame(width: 90, alignment: .leading)
+                                            .font(.system(size: 15))
+                                            .padding(.vertical, 2)
+                                            .padding(.horizontal, 1)
+                                            .onTapGesture {
+                                                hideKeyboard()
+                                            }
+
+                                        TextField("0.0", text: isoBinding(for: position, keyPath: \.rate))
+                                            .keyboardType(.numbersAndPunctuation)
+                                            .multilineTextAlignment(.trailing)
+                                            .font(.system(size: 15))
+                                            .frame(width: 76, alignment: .trailing)
+                                            .padding(.vertical, 2)
+                                            .padding(.horizontal, 1)
+                                            .foregroundStyle(rateColor)
+
+                                        if let ir = initRate, let irate = isoRate {
+                                            let d = ir - irate
+                                            let dStr = String(format: "%+.1f", d)
+                                            Text(dStr)
+                                                .frame(width: 48, alignment: .trailing)
+                                                .font(.system(size: 15))
+                                                .padding(.vertical, 2)
+                                                .padding(.horizontal, 1)
+                                                .foregroundStyle(rateColor)
+                                        } else {
+                                            Text("")
+                                                .frame(width: 48, alignment: .trailing)
+                                                .padding(.vertical, 2)
+                                                .padding(.horizontal, 1)
+                                        }
+
+                                        TextField("0", text: isoBinding(for: position, keyPath: \.amplitude))
+                                            .keyboardType(.decimalPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .font(.system(size: 15))
+                                            .frame(width: 76, alignment: .trailing)
+                                            .padding(.vertical, 2)
+                                            .padding(.horizontal, 1)
+
+                                        TextField("0.0", text: isoBinding(for: position, keyPath: \.beatError))
+                                            .keyboardType(.decimalPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .font(.system(size: 15))
+                                            .frame(width: 76, alignment: .trailing)
+                                            .padding(.vertical, 2)
+                                            .padding(.horizontal, 1)
+                                    }
+                                }
+                            }
+                            .background(
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        hideKeyboard()
+                                    }
+                            )
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
 
                 // Results
@@ -547,6 +805,23 @@ struct ContentView: View {
                         Text("Horizontal Avg: \(String(format: "%.2f", horizontalAvg)) s/d")
                         Text("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d")
                         Text("Horizontal vs Vertical Drop: \(String(format: "%.2f", verticalDrop)) s/d")
+
+                        if includeIsochronism && hasIsoRates {
+                            Text("24h Average Rate: \(String(format: "%.2f", isoAverageRate)) s/d")
+                                .padding(.top, 4)
+                            let isoChange = abs(averageIsoRateChange)
+                            let isoMax = isoMaxDelta
+                            Text("Avg Isochronism Rate Change: \(String(format: "%.2f", averageIsoRateChange)) s/d")
+                                .foregroundStyle(isoChange < 5 ? .green : (isoChange < 15 ? .orange : .red))
+                            Text("Isochronism Max Delta: \(String(format: "%.2f", isoMaxDelta)) s/d")
+                                .foregroundStyle(isoMax < 5 ? .green : (isoMax < 10 ? .orange : .red))
+                            if averageAmplitudeDrop != 0 {
+                                Text("Avg Amplitude Drop: \(String(format: "%.0f", averageAmplitudeDrop))°")
+                            }
+                            Text("(Guidelines: rate change <5 excellent, <15 acceptable; max delta <5 ideal)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -635,6 +910,18 @@ struct ContentView: View {
             }
             .navigationTitle("Timegrapher Logging")
             .onAppear {
+                initializeReadings()
+            }
+            .onChange(of: includeIsochronism) { _, isOn in
+                if isOn {
+                    for pos in positions {
+                        if isoReadings[pos] == nil {
+                            isoReadings[pos] = PositionData()
+                        }
+                    }
+                }
+            }
+            .onChange(of: includeDiagonals) { _, _ in
                 initializeReadings()
             }
             .simultaneousGesture(
