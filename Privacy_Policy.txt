@@ -1,0 +1,21 @@
+Timegrapher Logging - Privacy Policy
+
+Last updated: 2026-06-24
+
+Timegrapher Logging does not collect, store, or share any personal information from users.
+
+The app only requests permission to save images to your device's Photo Library when you choose to use the "Save Timegrapher results to camera roll" feature. These images are created from data you enter and are stored locally on your device only. No data is transmitted to any servers.
+
+No analytics, tracking, advertising, or third-party services are used.
+
+Optional donations can be made via PayPal (https://paypal.me/DanRicks444). PayPal processes donations separately according to their own privacy policy.
+
+For questions, contact Dan Ricks.
+
+Full policy: See Privacy_Policy.md (and Privacy_Policy.html) in this repository.
+
+Quick hosting options if you don't have a website:
+- GitHub Gist (easiest): https://gist.github.com → paste content → use the Raw URL
+- Netlify Drop (nice clean URL): https://app.netlify.com/drop → drag Privacy_Policy.html
+
+See the bottom of Privacy_Policy.md for detailed step-by-step instructions.

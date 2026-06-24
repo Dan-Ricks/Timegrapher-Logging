@@ -31,7 +31,6 @@ struct TimegrapherLoggingApp: App {
 
 struct SplashView: View {
     @State private var titleOpacity = 0.0
-    @State private var subtitleOpacity = 0.0
     @State private var scale: CGFloat = 0.85
 
     var body: some View {
@@ -51,13 +50,6 @@ struct SplashView: View {
                     .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
                     .opacity(titleOpacity)
                     .scaleEffect(scale)
-
-                Text("Dan Ricks 2026")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(.black.opacity(0.9))
-                    .shadow(color: .white, radius: 2, x: 0, y: 0)
-                    .shadow(color: .black.opacity(0.15), radius: 1, x: 0, y: 1)
-                    .opacity(subtitleOpacity)
             }
             .padding(20)
             .background(
@@ -70,9 +62,6 @@ struct SplashView: View {
             withAnimation(.easeOut(duration: 1.0)) {
                 titleOpacity = 1.0
                 scale = 1.0
-            }
-            withAnimation(.easeOut(duration: 1.0).delay(0.3)) {
-                subtitleOpacity = 1.0
             }
         }
     }

@@ -43,7 +43,7 @@ Requires iOS 17+ (or adjust deployment target).
 
 - Bundle ID: Currently `Dan-Ricks.Timegrapher-Logging` — change to your own (e.g. `com.yourname.timegrapherlogging`).
 - App Icons: Add proper icons in `Assets.xcassets/AppIcon.appiconset/` (1024x1024 PNG recommended; Xcode can generate others).
-- Privacy: `NSPhotoLibraryAddUsageDescription` is set for saving images.
+- Privacy: Full policy in `Privacy_Policy.md` + `Privacy_Policy.html`. No website needed — use GitHub Gist or Netlify Drop (see bottom of Privacy_Policy.md).
 - Version: Currently 1.0 (1). Increment for releases.
 - Screenshots: Provide for iPhone 6.7", 6.5", 5.5", etc. in App Store Connect.
 - Categories: Utilities or Productivity. Age rating: 4+ (no objectionable content).

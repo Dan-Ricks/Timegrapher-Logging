@@ -1,0 +1,68 @@
+=== APP STORE CONNECT LISTING - READY TO COPY ===
+
+App Name: Timegrapher Logging
+
+Subtitle (30 chars max):
+Professional Timegrapher Logger
+
+Promotional Text (170 chars max - use in ads or featured):
+The essential app for watchmakers. Log readings, visualize poising, measure isochronism, and export clean results images to your camera roll.
+
+Full Description (paste into the Description field):
+Timegrapher Logging is the essential tool for watchmakers and horologists who need precise, professional records of their timegrapher work.
+
+This app is 100% free with no ads, no subscriptions, and no in-app purchases.
+
+Easily log rate, amplitude, and beat error across all standard and diagonal positions. Get instant calculations for averages, maximum delta, horizontal and vertical averages, and vertical drop.
+
+Powerful Analysis Tools
+• Dynamic Poising — Automatically identifies the fastest vertical position at low amplitude. Visualize the heavy spot on a detailed balance wheel graphic with crown orientation and expert guidelines.
+
+• Isochronism Measurements — Record readings 24 hours later to calculate rate changes (Δ) per position. View color-coded results with clear guidelines for modern and vintage movements.
+
+Professional Export
+Generate publication-quality results images and save them directly to your camera roll. Perfect for client records, service reports, or your personal archives.
+
+Additional features include custom lift angle and beat rate support, one-tap keyboard dismissal, and clean, efficient tables designed specifically for watchmakers.
+
+Whether you're servicing modern movements or restoring vintage timepieces, Timegrapher Logging helps you work faster and document your work with confidence.
+
+If you find the app useful, optional donations via PayPal are greatly appreciated and help support future updates.
+
+Created by a watch enthusiast, for watch enthusiasts.
+
+Keywords (100 chars max - comma separated, no spaces after commas):
+timegrapher,watchmaking,horology,poising,isochronism,balance wheel,amplitude,beat error,regulation,watch repair
+
+What's New (for version 1.0):
+Initial release. Professional timegrapher logging with dynamic poising visuals, isochronism analysis, and one-tap export to camera roll.
+
+Support URL: https://paypal.me/DanRicks444
+Marketing URL: (optional)
+
+=== SCREENSHOT UPLOAD ORDER (use your existing files) ===
+For each device size (6.9", 6.5", 5.5") upload in this order:
+
+1. 01-Main-Table.png
+2. 02-Results.png
+3. 03-Poising-Wheel.png
+4. 04-Isochronism-Table.png
+5. 05-Isochronism-Stats.png
+6. 06-Export-Preview.png
+
+In App Store Connect:
+- After creating the app, go to App Store tab
+- Scroll to iPhone Screenshots
+- Drag and drop the files into the correct device size sections
+- Reorder if needed
+
+Tip: Use the exact same 6 images (with matching names) for all device sizes for consistency.
+
+=== NOTES ===
+- Age Rating: 4+
+- Primary Category: Utilities or Productivity
+- Secondary Category: Reference
+- Copyright: 2026 Dan Ricks
+- Bundle ID: com.danricks.timegrapher-logging (already set in Xcode)
+- SKU: timegrapher-logging (or whatever you chose)
+- Privacy Policy: Use Privacy_Policy.html (drag to https://app.netlify.com/drop) or GitHub Gist Raw URL. See Privacy_Policy.md for exact steps.

@@ -44,6 +44,7 @@ struct ContentView: View {
 
     @State private var includeDiagonals = false
     @State private var includeIsochronism = false
+    @State private var includeDynamicPoising = false
 
     @State private var timepiece = ""
 
@@ -107,7 +108,7 @@ struct ContentView: View {
     }
 
     private var verticalAvg: Double {
-        let vals = ["Crown Down", "Crown Left", "Crown Up", "Crown Right"].compactMap { computedRates[$0] }
+        let vals = verticalPositions.compactMap { computedRates[$0] }
         return vals.isEmpty ? 0 : vals.reduce(0, +) / Double(vals.count)
     }
 
@@ -342,7 +343,7 @@ struct ContentView: View {
         lines.append("Average Rate: \(String(format: "%.2f", averageRate)) s/d")
         lines.append("Max Delta: \(String(format: "%.2f", maxDelta)) s/d")
         lines.append("Horizontal Avg: \(String(format: "%.2f", horizontalAvg)) s/d")
-        lines.append("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d")
+        lines.append("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d" + (includeDiagonals ? " (incl. diags)" : ""))
         lines.append("Horizontal vs Vertical Drop: \(String(format: "%.2f", verticalDrop)) s/d")
 
         if includeIsochronism && hasIsoRates {
@@ -577,7 +578,7 @@ struct ContentView: View {
                         HStack(spacing: 0) {
                             Text("Largest Delta")
                                 .frame(width: 90, alignment: .leading)
-                                .font(.system(size: 15, weight: .bold))
+                                .font(.system(size: 13))
                                 .padding(.vertical, 2)
                                 .padding(.horizontal, 1)
                                 .background(Color.gray.opacity(0.05))
@@ -591,7 +592,7 @@ struct ContentView: View {
                                     .padding(.vertical, 2)
                                     .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
-                                    .font(.system(size: 15))
+                                    .font(.system(size: 13))
                             } else {
                                 Text("")
                                     .frame(width: 76, alignment: .trailing)
@@ -606,7 +607,7 @@ struct ContentView: View {
                                     .padding(.vertical, 2)
                                     .padding(.horizontal, 1)
                                     .background(Color.gray.opacity(0.05))
-                                    .font(.system(size: 15))
+                                    .font(.system(size: 13))
                             } else {
                                 Text("")
                                     .frame(width: 76, alignment: .trailing)
@@ -658,6 +659,19 @@ struct ContentView: View {
                     .onTapGesture {
                         hideKeyboard()
                         includeIsochronism.toggle()
+                    }
+                    .padding(.top, 4)
+
+                    HStack {
+                        Text("Include Dynamic Poising info")
+                        Spacer()
+                        Image(systemName: includeDynamicPoising ? "checkmark.square.fill" : "square")
+                            .foregroundColor(.blue)
+                    }
+                    .font(.caption)
+                    .onTapGesture {
+                        hideKeyboard()
+                        includeDynamicPoising.toggle()
                     }
                     .padding(.top, 4)
                 }
@@ -803,7 +817,7 @@ struct ContentView: View {
                         Text("Average Rate: \(String(format: "%.2f", averageRate)) s/d")
                         Text("Max Delta: \(String(format: "%.2f", maxDelta)) s/d")
                         Text("Horizontal Avg: \(String(format: "%.2f", horizontalAvg)) s/d")
-                        Text("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d")
+                        Text("Vertical Avg: \(String(format: "%.2f", verticalAvg)) s/d" + (includeDiagonals ? " (incl. diags)" : ""))
                         Text("Horizontal vs Vertical Drop: \(String(format: "%.2f", verticalDrop)) s/d")
 
                         if includeIsochronism && hasIsoRates {
@@ -829,54 +843,57 @@ struct ContentView: View {
                     }
                 }
 
-                // Dynamic Poising heavy spot
-                Section("Dynamic Poising") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Heavy Spot on Balance Wheel")
-                            .font(.headline)
+                if includeDynamicPoising {
+                    // Dynamic Poising heavy spot
+                    Section("Dynamic Poising") {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Heavy Spot on Balance Wheel")
+                                .font(.headline)
 
-                        Text("Vertical poise spread guidelines (low amplitude):")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text("<10 s/d: excellent (modern/high-grade) • 10–20: good • ≤25 s/d: acceptable for vintage • >25: consider further poising")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-
-                        if hasVerticalRates, let pos = fastestVerticalPosition {
-                            Text("Fastest vertical position at low amplitude: **\(pos)**")
-                                .font(.subheadline)
-                            Text("Rule: The heavy spot is directly below the balance staff in the vertical position where the watch runs fastest (low amplitude ~140-160°).")
-                                .font(.caption)
+                            Text("Vertical poise spread guidelines (low amplitude):")
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text("Remove a minimal amount of material from the rim at the heavy spot (or add weight to the opposite side).")
-                                .font(.caption)
+                            Text("<10 s/d: excellent (modern/high-grade) • 10–20: good • ≤25 s/d: acceptable for vintage • >25: consider further poising")
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
 
-                            let vertD = verticalPositions.compactMap { computedRates[$0] }
-                            let pD = (vertD.max() ?? 0) - (vertD.min() ?? 0)
-                            Text("Poise delta (vert. rate spread): \(String(format: "%.1f", pD)) s/d")
-                                .font(.caption)
-                                .foregroundStyle(pD < 10 ? .green : (pD < 25 ? .orange : .red))
+                            if hasVerticalRates, let pos = fastestVerticalPosition {
+                                Text("Fastest vertical position at low amplitude: **\(pos)**")
+                                    .font(.subheadline)
+                                Text("Rule: The heavy spot is directly below the balance staff in the vertical position where the watch runs fastest (low amplitude ~140-160°).")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("Remove a minimal amount of material from the rim at the heavy spot (or add weight to the opposite side).")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
 
-                            BalanceWheelView(heavyPosition: pos)
-                                .frame(height: 250)
-                                .padding(.top, 8)
-                                .padding(.bottom, 12)
-                        } else {
-                            Text("Enter rates for vertical positions (Crown Down/Left/Up/Right) to determine the heavy spot.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                let vertD = verticalPositions.compactMap { computedRates[$0] }
+                                let pD = (vertD.max() ?? 0) - (vertD.min() ?? 0)
+                                Text("Poise delta (vert. rate spread): \(String(format: "%.1f", pD)) s/d")
+                                    .font(.caption)
+                                    .foregroundStyle(pD < 10 ? .green : (pD < 25 ? .orange : .red))
 
-                            BalanceWheelView(heavyPosition: nil)
-                                .frame(height: 210)
-                                .padding(.top, 8)
-                                .padding(.bottom, 12)
+                                BalanceWheelView(heavyPosition: pos)
+                                    .frame(height: 250)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 12)
+                            } else {
+                                let vPos = verticalPositions.joined(separator: ", ")
+                                Text("Enter rates for vertical positions (\(vPos)) to determine the heavy spot.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                BalanceWheelView(heavyPosition: nil)
+                                    .frame(height: 210)
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 12)
+                            }
                         }
-                    }
-                    .padding(.vertical, 4)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        hideKeyboard()
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            hideKeyboard()
+                        }
                     }
                 }
 
@@ -896,19 +913,36 @@ struct ContentView: View {
                     hideKeyboard()
                 }
 
-                Text("© Dan Ricks 2026")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        hideKeyboard()
+                // Support section (includes PayPal and copyright)
+                Section {
+                    VStack(spacing: 8) {
+                        Text("This app is 100% free with no ads or subscriptions.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        Text("If you find it useful in your work, optional donations are greatly appreciated.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        Link(destination: URL(string: "https://paypal.me/DanRicks444")!) {
+                            Label("Support via PayPal", systemImage: "heart.fill")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+
+                        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+                        Text("v\(version) • © Dan Ricks 2026")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 4)
                     }
+                    .frame(maxWidth: .infinity)
+                }
 
             }
-            .navigationTitle("Timegrapher Logging")
             .onAppear {
                 initializeReadings()
             }
