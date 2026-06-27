@@ -8,7 +8,7 @@ The app only requests permission to save images to your device's Photo Library w
 
 No analytics, tracking, advertising, or third-party services are used.
 
-Optional donations can be made via PayPal (https://paypal.me/DanRicks444). PayPal processes donations separately according to their own privacy policy.
+Optional tips can be made via PayPal (https://paypal.me/DanRicks444). PayPal processes tips separately according to their own privacy policy.
 
 For questions, contact Dan Ricks.
 

@@ -921,13 +921,13 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
 
-                        Text("If you find it useful in your work, optional donations are greatly appreciated.")
+                        Text("If you find it useful in your work, optional tips are greatly appreciated.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
 
                         Link(destination: URL(string: "https://paypal.me/DanRicks444")!) {
-                            Label("Support via PayPal", systemImage: "heart.fill")
+                            Label("Tip via PayPal", systemImage: "heart.fill")
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)

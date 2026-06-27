@@ -35,9 +35,9 @@ The exact permission message shown by iOS is:
 
 You can revoke this permission at any time in iOS Settings > Timegrapher Logging.
 
-## Optional Donations
+## Optional Tips
 
-If you choose to support the app via the PayPal link, donation processing is handled entirely by PayPal. We do not receive or store any payment or personal information from PayPal.
+If you choose to support the app via the PayPal link, tip processing is handled entirely by PayPal. We do not receive or store any payment or personal information from PayPal.
 
 See PayPal's privacy policy for details: https://www.paypal.com/us/legalhub/privacy-full
 

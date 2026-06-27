@@ -1,32 +1,32 @@
-# Donations & Free App Setup
+# Tips & Free App Setup
 
 This app is provided completely free with **no ads and no in-app purchases**.
 
-## How Donations Work
+## How Tips Work
 
 - A "Support Development" section is included at the bottom of the main screen.
-- Tapping it opens your PayPal donation page in Safari.
+- Tapping it opens your PayPal page in Safari.
 - This is fully compliant with App Store guidelines because:
   - No features are locked behind payment.
   - All core functionality is free.
-  - Donations are entirely optional.
+  - Tips are entirely optional.
 
 ## How to Set Your PayPal Link
 
 1. Open `ContentView.swift`
-2. Find this line (around line 980 area):
+2. Find this line (around line 930 area):
    ```swift
    Link(destination: URL(string: "https://paypal.me/DanRicks444")!)
    ```
 3. The link is already set to your PayPal ID (DanRicks444). If you want to suggest a specific amount, you can change it to:
-   `https://paypal.me/DanRicks444/5` (suggests $5 donation)
+   `https://paypal.me/DanRicks444/5` (suggests $5 tip)
 
 ## App Store Description Wording
 
 Use this kind of language in your App Store description:
 
 "This app is 100% free with no ads or subscriptions.  
-If you find it useful, optional donations via PayPal are greatly appreciated."
+If you find it useful, optional tips via PayPal are greatly appreciated."
 
 See `AppStore_Listing_Copy.txt` for the full polished description.
 
@@ -39,5 +39,5 @@ See `AppStore_Listing_Copy.txt` for the full polished description.
 
 ## Legal / Tax Note
 
-Donations received may be considered taxable income depending on your country. Keep records.
+Tips received may be considered taxable income depending on your country. Keep records.
 
