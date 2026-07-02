@@ -37,9 +37,9 @@ You can revoke this permission at any time in iOS Settings > Timegrapher Logging
 
 ## Optional Tips
 
-If you choose to support the app via the PayPal link, tip processing is handled entirely by PayPal. We do not receive or store any payment or personal information from PayPal.
+Optional tips can be purchased via in-app purchase. No personal information is collected or stored for tips.
 
-See PayPal's privacy policy for details: https://www.paypal.com/us/legalhub/privacy-full
+See Apple's privacy policy for in-app purchases.
 
 ## Children's Privacy
 

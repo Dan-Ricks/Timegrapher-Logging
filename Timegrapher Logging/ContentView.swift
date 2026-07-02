@@ -8,6 +8,7 @@
 import SwiftUI
 import Photos
 import UIKit
+import StoreKit
 
 struct PositionData: Codable {
     var rate: String = ""
@@ -54,6 +55,10 @@ struct ContentView: View {
 
     @State private var isSaving = false
     @State private var showSavedAlert = false
+
+    @State private var tipProducts: [Product] = []
+    @State private var isPurchasing = false
+    @State private var showTipThanks = false
 
     private var currentLiftAngle: Double {
         if useCustomLift, let val = Double(customLift) { return val }
@@ -926,11 +931,19 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
 
-                        Link(destination: URL(string: "https://paypal.me/DanRicks444")!) {
-                            Label("Tip via PayPal", systemImage: "heart.fill")
-                                .frame(maxWidth: .infinity)
+                        if !tipProducts.isEmpty {
+                            HStack(spacing: 8) {
+                                ForEach(tipProducts) { product in
+                                    Button(product.displayPrice) {
+                                        Task {
+                                            await purchaseTip(product)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(isPurchasing)
+                                }
+                            }
                         }
-                        .buttonStyle(.bordered)
 
                         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
                         Text("v\(version) • © Dan Ricks 2026")
@@ -964,10 +977,22 @@ struct ContentView: View {
                         hideKeyboard()
                     }
             )
+            .task {
+                do {
+                    tipProducts = try await Product.products(for: ["tip099", "tip199", "tip499"])
+                } catch {
+                    print("Failed to load tip products: \(error)")
+                }
+            }
             .alert("Saved!", isPresented: $showSavedAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("The results image has been saved to your Photos library.")
+            }
+            .alert("Thank you!", isPresented: $showTipThanks) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Your tip is greatly appreciated!")
             }
         }
         .simultaneousGesture(
@@ -976,6 +1001,27 @@ struct ContentView: View {
                     hideKeyboard()
                 }
         )
+    }
+
+    private func purchaseTip(_ product: Product) async {
+        guard !isPurchasing else { return }
+        isPurchasing = true
+        defer { isPurchasing = false }
+        do {
+            let result = try await product.purchase()
+            switch result {
+            case .success(let verification):
+                let transaction = try verification.payloadValue
+                await transaction.finish()
+                showTipThanks = true
+            case .userCancelled, .pending:
+                break
+            @unknown default:
+                break
+            }
+        } catch {
+            print("Purchase failed: \(error)")
+        }
     }
 }
 
